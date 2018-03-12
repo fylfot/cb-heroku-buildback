@@ -1,0 +1,9 @@
+#!/bin/sh
+
+cat << EOF
+---
+config_vars:
+  PATH: /app/otp/bin:bin:/usr/bin:/bin
+default_process_types:
+  web: ./init.sh start
+EOF
