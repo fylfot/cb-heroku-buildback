@@ -6,16 +6,3 @@ if [ -f $1/boss.config ]; then
 else
   exit 1
 fi
-
-# if [ -f $1/rebar.config ]; then
-#   echo "Erlang"
-#   exit 0
-# elif [ -f $1/erlang.mk ]; then
-#   echo "Erlang"
-#   exit 0
-# elif [ -d $1/ebin ]; then
-#   echo "Erlang"
-#   exit 0
-# else
-#   exit 1
-# fi
