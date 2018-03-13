@@ -8,7 +8,7 @@ Well, if you dear developer, look into Heroku's original buildpack, you will see
 
 ## Requirements
 
-1. For the buildpak to work correctly, your repo with ChicagoBoss config should be flat with no subdirectories containing app code, located directly in `root`.
+1. For the buildpack to work correctly, your repo with ChicagoBoss config should be flat with no subdirectories containing app code, located directly in `root`.
 
 2. You need to create Procfile in your repo (example in this repo), but that Procfile is not using ChicagoBoss init.sh because, you must add few important commands:
 
