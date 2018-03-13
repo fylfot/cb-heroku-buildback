@@ -28,4 +28,4 @@ web: erl -pa ./deps/aleppo/ebin -pa ./deps/binpp/ebin -pa ./deps/boss/ebin -pa .
 
 This shell can actually be generatd by calling **./rebar boss c=start_dev_cmd** or **./rebar boss c=start_cmd**, but actual difference is existance of **-detached** flag. AND remember to replace `-sname erwish` with your own application name.
 
-Finally, keep in mind, each time you update `rebar` with some dependencies, **you must to update Procfile**.
+Finally, keep in mind, each time you update `rebar` with some dependencies, **you must update Procfile**.
