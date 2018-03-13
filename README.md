@@ -1,8 +1,8 @@
-# Heroku buildpack: Chicagoboss
+# Heroku Buildpack: Chicagoboss
 
 Repo contains a modernized Heroku buildpack for Erlang, specifically for chicagoboo. It's a mix of [Erlang Buildpack](https://github.com/jazzystring1/heroku-buildpack-erlang) and [ChicagoBoss Buildpack](https://github.com/cstar/heroku-buildpack-chicagoboss).
 
-## Why another Buildpak?... And specifically for chicagoboss
+## Why another Buildpack?... And specifically for chicagoboss
 
 Well, if you dear developer, look into Heroku's original buildpack, you will see it's nearly 4 years old. This new iteration, version 20.1, is for use with the ChicagoBoss framework and complies with all modern Heroku requirements, including those related to auto-redeploy. So... basically everything should work, but **please read requirements before using!**
 
