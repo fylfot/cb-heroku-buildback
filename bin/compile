@@ -64,6 +64,7 @@ cd $build
 unset GIT_DIR
 
 echo "-----> Building with Rebar"
+cp boss.config boss.config.heroku
 ./rebar get-deps compile compile-app 2>&1 | sed -u 's/^/       /'
 
 
