@@ -26,177 +26,54 @@ test -z ${build} && exit
 cache=$(cd "$2/" && pwd)
 test -z ${cache} && exit
 
+OTP_TARBALL_URL="https://svn.marco-gatti.com/heroku/${$STACK}/OTP-20.1"
+ERLROOT=${build}/otp
 PROFILE=${HOME}/.profile.d
 
-if [ $BINARY_RELEASES ]; then
-    ROOT=${build}/
-    NAME=$REL_NAME
-    tarball=$NAME-$REL_VSN.tar.gz
-    if [ -d ${ROOT}/erts-${ERTS_VSN} ]; then
-        TARBALL_URL=$NAME/$REL_VSN/$ERTS_VSN/trusty/$NAME-$REL_VSN-no-erts.tar.gz
-    else
-        mkdir -p ${PROFILE}
-        echo "export PATH=$ROOT/bin:$ROOT/erts-$ERTS_VSN/bin:$PATH" > ${PROFILE}/otp.sh
-        if [ $FETCH_LATEST ]; then
-            TARBALL_URL=$NAME/$NAME-latest.tar.gz
-        else
-            TARBALL_URL=$NAME/$REL_VSN/$ERTS_VSN/trusty/$NAME-$REL_VSN.tar.gz
-        fi
-    fi
+echo "-----> Using Erlang/$ver"
 
-    echo "-----> Installing Erlang Release ${NAME}-${REL_VSN}"
+(
+    set -e
 
-    (
-        set -e
+    # Already cached?
+    test -f ${cache}/${tarball} && exit
 
-        # Already cached?
-        test -f "${cache}/${tarball}" && exit
+    rm -rf ${cache}/* # be sure not to build up cruft
+    cd ${cache}
+    echo "-------> Fetching Erlang/$ver"
+    curl -sSO ${OTP_TARBALL_URL}
 
-        rm -rf ${cache}/* # be sure not to build up cruft
-        cd ${cache}
-        echo "-------> Fetching Release"
-        ${bpdir}/opt/gof3r get -b $BUCKET -k "$TARBALL_URL" -p "${cache}/${tarball}" --no-md5 || exit 1
-    )
+    echo "-------> Finished fetching tarball, checking"
+    file ${tarball} | grep -ql gzip
 
-    if [ -d ${ROOT}/releases ]; then
-        if ${ROOT}/bin/${NAME} ping; then
-            echo "-------> Installing Release"
-            cd ${ROOT}
-            mkdir -p ${ROOT}/releases/$REL_VSN/
-            cp ${cache}/${tarball} ${ROOT}/releases/$REL_VSN/$NAME.tar.gz
+)
 
-            ## First default RELEASE_UPGRADE to false, in case it's undefined
-            RELEASE_UPGRADE=${RELEASE_UPGRADE:=false}
-            if [ $RELEASE_UPGRADE == true ]; then
-                ${ROOT}/bin/${NAME} upgrade $REL_VSN
-                tar -xf ${cache}/${tarball} bin
-            else
-                ${ROOT}/bin/${NAME} unpack $REL_VSN
-                tar -xf ${cache}/${tarball} bin
-            fi
-        else
-            echo "-------> Unpacking Release"
-            tar zxf ${cache}/${tarball} -C ${ROOT}
-            echo "-------> Installing Release"
-        fi
-    else
-        echo "-------> Unpacking Release"
-        tar zxf ${cache}/${tarball} -C ${ROOT}
-        echo "-------> Installing Release"
-    fi
+echo "-------> Unpacking Erlang/OTP $ver"
+mkdir -p ${ERLROOT}
+tar zxf ${cache}/${tarball} -C ${ERLROOT} ${strip}
+echo "-------> Installing Erlang/OTP $ver"
+ln -s ${ERLROOT} /app/otp
+${ERLROOT}/Install -minimal /app/otp
 
-    if [ $FETCH_LATEST ]; then
-        echo "web: RELX_REPLACE_OS_VARS=true bin/\${REL_NAME} foreground -env ERL_CRASH_DUMP \"\${ERL_CRASH_DUMP_DIR:-\$HOME}/\${INSTANCE_NAME}_boot_\$(date -u +\"%Y-%m-%dT%H:%M:%SZ%Z\")\"" > ./Procfile
-    else
-        echo "web: RELX_REPLACE_OS_VARS=true bin/\${REL_NAME}-\${REL_VSN} foreground -env ERL_CRASH_DUMP \"\${ERL_CRASH_DUMP_DIR:-\$HOME}/\${INSTANCE_NAME}_boot_\$(date -u +\"%Y-%m-%dT%H:%M:%SZ%Z\")\"" > ./Procfile
-    fi
-    echo "-----> Install succeeded"
-else
-    DEFAULT_OTP_VERSION="OTP-20.1"
-    if [ -f ${build}/.preferred_otp_version ]; then
-        OTP_VERSION=$(cat ${build}/.preferred_otp_version)
-    fi
-    ver=${OTP_VERSION:=${DEFAULT_OTP_VERSION}}
-    case $STACK in
-        heroku-16)
-            echo "-----> Stack is heroku-16"
-            tarball="${ver}.tgz"
-            location="heroku/heroku-16/"
-            strip=""
-            ;;
-        *)
-            echo "-----> Sorry, stack $STACK is not available"
-            exit 1
-            ;;
-    esac
-    OTP_TARBALL_URL="https://svn.marco-gatti.com/${location}${tarball}"
-    ERLROOT=${build}/otp
-    PROFILE=${HOME}/.profile.d
+PATH=/app/otp/bin:$PATH
+export PATH
 
-    echo "-----> Using Erlang/$ver"
+cd $build
 
-    (
-        set -e
+unset GIT_DIR
 
-        # Already cached?
-        test -f ${cache}/${tarball} && exit
+echo "-----> Building with Rebar"
+./rebar get-deps compile compile-app 2>&1 | sed -u 's/^/       /'
 
-        rm -rf ${cache}/* # be sure not to build up cruft
-        cd ${cache}
-        echo "-------> Fetching Erlang/$ver"
-        curl -sSO ${OTP_TARBALL_URL}
 
-        echo "-------> Finished fetching tarball, checking"
-        file ${tarball} | grep -ql gzip
-
-    )
-
-    echo "-------> Unpacking Erlang/OTP $ver"
-    mkdir -p ${ERLROOT}
-    tar zxf ${cache}/${tarball} -C ${ERLROOT} ${strip}
-    echo "-------> Installing Erlang/OTP $ver"
-    ln -s ${ERLROOT} /app/otp
-    ${ERLROOT}/Install -minimal /app/otp
-
-    PATH=/app/otp/bin:$PATH
-    export PATH
-
-    cd $build
-
-    TOOL="none"
-
-    if [ ! -e "rebar" ]; then
-        if [ ! -e "rebar3" -a ! -e "rebar.lock" ]; then
-	        if [ -e "erlang.mk" ]; then
-	            TOOL="erlang.mk"
-	        else
-                ## can't find any of the others, fall back to rebar
-                echo "-----> Installing Rebar from buildpack"
-                cp ${bpdir}/opt/rebar ./
-                TOOL="rebar"
-            fi
-        else
-            # if lockfile but no binary
-            if [ ! -e "rebar3" ]; then
-                echo "-----> Installing Rebar3 from rebar3.org nightly"
-                curl -o rebar3 https://s3.amazonaws.com/rebar3/rebar3
-                chmod +x rebar3
-            fi
-            TOOL="rebar3"
-        fi
-    else
-        TOOL="rebar"
-    fi
-
-    unset GIT_DIR
-
-    case $TOOL in
-        "rebar")
-            echo "-----> Building with Rebar"
-            make
-            ./rebar get-deps compile compile-app 2>&1 | sed -u 's/^/       /'
-            ;;
-        "rebar3")
-            echo "-----> Building release with Rebar3"
-            TERM=dumb
-            rebar3 update
-            rebar3 release -i true --dev-mode false  2>&1 | sed -u 's/^/       /'
-            ;;
-        "erlang.mk")
-	        echo "-----> Building release with erlang.mk"
-	        make 2>&1 | sed -u 's/^/       /'
-	        ;;
-    esac
-
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
-        echo "-----> Build failed"
-        exit 1
-    fi
-
-    if [ -f ${bpdir}/opt/otp.sh ]; then
-        mkdir -p ${PROFILE}
-        cp ${bpdir}/opt/otp.sh ${PROFILE}
-    fi
-
-    echo "-----> Build succeeded"
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+    echo "-----> Build failed"
+    exit 1
 fi
+
+if [ -f ${bpdir}/opt/otp.sh ]; then
+    mkdir -p ${PROFILE}
+    cp ${bpdir}/opt/otp.sh ${PROFILE}
+fi
+
+echo "-----> Build succeeded"
