@@ -10,7 +10,7 @@ If you, dear developer, investigate Heroku's original buildpack for Erlang, you 
 
 1. For the buildpack to work correctly, your repo with ChicagoBoss config should be flat with no subdirectories containing app code, located directly in `root`.
 
-2. You need to create Procfile in your repo (example in this repo), but that Procfile is not using ChicagoBoss init.sh because, you must add few important commands:
+2. You need to create Procfile in your repo (example in this repo). This Procfile will not use ChicagoBoss default integrated script, using instead init.sh, because it must be customzied slight to work on Heroku by adding:
 
 - **-noinput** - that will prevent app crash after deploy/restart on heroku (Heroku doesn't have stdin source, so if **erl** will ask for that, you will get segfault).
 
