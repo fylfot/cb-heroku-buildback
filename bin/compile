@@ -173,6 +173,7 @@ else
     case $TOOL in
         "rebar")
             echo "-----> Building with Rebar"
+            make
             ./rebar get-deps compile 2>&1 | sed -u 's/^/       /'
             ;;
         "rebar3")
