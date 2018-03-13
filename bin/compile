@@ -26,6 +26,7 @@ test -z ${build} && exit
 cache=$(cd "$2/" && pwd)
 test -z ${cache} && exit
 
+tarball="OTP-20.1.tgz"
 OTP_TARBALL_URL="https://svn.marco-gatti.com/heroku/${STACK}/OTP-20.1"
 ERLROOT=${build}/otp
 PROFILE=${HOME}/.profile.d
